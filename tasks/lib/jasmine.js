@@ -33,13 +33,37 @@ exports.init = function(grunt, phantomjs) {
     });
   };
 
-  exports.buildSpecrunner = function (src, options){
+  exports.buildSpecrunner = function (src, options, generateSpecNames){
     var source = '',
       outfile = options.outfile,
       specrunner = path.join(baseDir,outfile),
       outdir = path.dirname(outfile),
       gruntfilter = grunt.option("filter"),
       filteredSpecs = exports.getRelativeFileList(outdir, options.specs);
+
+    var specNames;
+
+    if(generateSpecNames) {
+
+      specNames = [];
+
+      for (var i = 0; i < filteredSpecs.length; i++) {
+        var _spec = fs.readFileSync(filteredSpecs[i], 'utf8');
+
+        try {
+          var name = _spec.replace(/(?:\r\n|\r|\n)/g, '').split(/describe\s*\(\s*[\"\']/)[1].split(/[\"\']\s*[,]\s*function/)[0];
+          specNames[specNames.length] = name;
+        } catch (e) {
+
+        }
+
+      }
+
+    }
+
+    // filteredSpecs.splice(5, filteredSpecs.length);
+
+    // console.log(filteredSpecs.length);
 
     // Let's filter through the spec files here,
     // there's no need to go on if no specs matches
@@ -115,12 +139,12 @@ exports.init = function(grunt, phantomjs) {
       grunt.file.copy(options.template, specrunner, {
         process : function(src) {
           source = _.template(src, context);
-          return source;
+          return [source, specNames];
         }
       });
     }
 
-    return source;
+    return  [source, specNames];
   };
 
   exports.getRelativeFileList = function(outdir, patterns, options) {
@@ -168,6 +192,9 @@ exports.init = function(grunt, phantomjs) {
       }
 
       filteredArray = _.uniq(scriptSpecs);
+
+      grunt.log(filteredArray);
+
     }
 
     return filteredArray;

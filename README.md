@@ -5,18 +5,23 @@
 
 
 ## Getting Started
+
+This plugin is a fork of grunt-contrib-jasmine. This plugin works around solving memory issues caused by Phantom browser. But it works bit slow.
+
+Todos : Rewrite tests for this plugin, check all the other functionalities.
+
 This plugin requires Grunt `~0.4.0`
 
 If you haven't used [Grunt](http://gruntjs.com/) before, be sure to check out the [Getting Started](http://gruntjs.com/getting-started) guide, as it explains how to create a [Gruntfile](http://gruntjs.com/sample-gruntfile) as well as install and use Grunt plugins. Once you're familiar with that process, you may install this plugin with this command:
 
 ```shell
-npm install grunt-contrib-jasmine --save-dev
+npm install grunt-contrib-jasmine-phantom --save-dev
 ```
 
 Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
 
 ```js
-grunt.loadNpmTasks('grunt-contrib-jasmine');
+grunt.loadNpmTasks('grunt-contrib-jasmine-phantom');
 ```
 
 
@@ -24,6 +29,8 @@ grunt.loadNpmTasks('grunt-contrib-jasmine');
 
 ## Jasmine task
 _Run this task with the `grunt jasmine` command._
+
+If you want to run specific Suite or any spec. _Run this task with the `grunt jasmine:unit:run="suite1|suite2|......etc"`
 
 Automatically builds and maintains your spec runner and runs your tests headlessly through PhantomJS.
 
@@ -167,6 +174,13 @@ Type: `Boolean`
 Default: `false`
 
 Display a list of all failed tests and their failure messages
+
+
+#### options.handlers
+Type: `Object`,
+Default : `{}`
+
+If you want to attach any event on Phantom instance pass them through handlers object with event name as key and handler as value.
 
 ### Flags
 
