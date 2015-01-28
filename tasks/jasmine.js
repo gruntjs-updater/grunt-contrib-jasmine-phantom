@@ -65,6 +65,10 @@ module.exports = function(grunt) {
     };
   }
 
+  var $phantomjs = require('grunt-lib-phantomjs');
+
+  var $jasmine = require('./lib/jasmine');
+
   grunt.registerMultiTask('jasmine', 'Run jasmine specs headlessly through PhantomJS.', function() {
 
     var providedSpecs;
@@ -101,9 +105,9 @@ module.exports = function(grunt) {
 
     // setup(options);
 
-    var phantomjs = require('grunt-lib-phantomjs').init(grunt);
+    var phantomjs = $phantomjs.init(grunt);
 
-    var jasmine = require('./lib/jasmine').init(grunt, phantomjs);
+    var jasmine = $jasmine.init(grunt, phantomjs);
 
     // jasmine.cleanTemp();
 
@@ -125,9 +129,12 @@ module.exports = function(grunt) {
 
     var done = this.async();
 
-    var canRun = 1, freeMem = Math.floor(os.freemem() / (1024 * 1024)) - 2000;
+    var canRun = 1, freeMem;// = Math.floor(os.freemem() / (1024 * 1024)) - 2000;
 
     canRun = Math.max(1, Math.floor(freeMem / 300));
+
+
+    var outFileName = options.outfile;
 
     // console.log(canRun);
 
@@ -139,9 +146,9 @@ module.exports = function(grunt) {
 
       // console.log(task);
 
-      var phantomjs = require('grunt-lib-phantomjs').init(grunt);
+      var phantomjs = $phantomjs.init(grunt);
 
-      var jasmine = require('./lib/jasmine').init(grunt, phantomjs);
+      var jasmine = $jasmine.init(grunt, phantomjs);
 
       setup(options, phantomjs, jasmine, function(duration, specCount, failedSpecs, isEmpty) {
           totalSpecs += parseInt(specCount, 10);
@@ -156,7 +163,7 @@ module.exports = function(grunt) {
 
       current = task;
 
-      options.outfile = '_SpecRunner.html?spec=' + task;
+      options.outfile = outFileName + '?spec=' + task;
 
       // console.log(options.outfile);
 
@@ -200,6 +207,7 @@ module.exports = function(grunt) {
           jasmine.cleanTemp();
         }
         grunt.verbose.writeln('Jasmine Runner Finished...');
+
         console.log(chalk.green('\n________________________________REPORT START_____________________________\n'));
         console.log(chalk.yellow('Total time for running specs ') + ' : ' + chalk.green((Date.now() - startedTime) + 'ms.') +  '\n');
         console.log(chalk.yellow('Total number of specs') + ' : ' + chalk.green(totalSpecs) + '\n');
@@ -210,7 +218,7 @@ module.exports = function(grunt) {
         console.log(chalk[failed.length > 0 ? 'red' : 'blue']('Number of failed specs : ' + failed.length) + '\n');
 
         for(var i = 0; i < failed.length; i++) {
-            console.log(chalk.red(failed[i].name + '\n'));
+            console.log(chalk.red('----> X ' + failed[i].name + '\n'));
         }
 
         for(i = 0; i < memoryUsage.length; i++) {
@@ -220,10 +228,11 @@ module.exports = function(grunt) {
         }
 
         if(failed.length > 0) {
-          grunt.log.error('Few specs failed.');
+          grunt.fail.warn(chalk.red.underline('Few of specs failed tests.') + '\n')
         }
 
         console.log(chalk.green('\n________________________________REPORT END_______________________________\n'));
+
         done(true);
     });
 

@@ -23,9 +23,7 @@
   "engines": {
     "node": ">=0.8.0"
   },
-  "scripts": {
-    // "test": "grunt test"
-  },
+  "scripts": {},
   "dependencies": {
     "grunt-lib-phantomjs": "^0.6.0",
     "rimraf": "~2.1.4",
