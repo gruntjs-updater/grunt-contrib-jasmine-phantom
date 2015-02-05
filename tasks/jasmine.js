@@ -15,10 +15,10 @@ module.exports = function (grunt) {
     });
 
     function msToTime(duration) {
-        var milliseconds = parseInt((duration % 1000) / 100)
-            , seconds = parseInt((duration / 1000) % 60)
-            , minutes = parseInt((duration / (1000 * 60)) % 60)
-            , hours = parseInt((duration / (1000 * 60 * 60)) % 24);
+        var milliseconds = parseInt((duration % 1000) / 100),
+            seconds = parseInt((duration / 1000) % 60),
+            minutes = parseInt((duration / (1000 * 60)) % 60),
+            hours = parseInt((duration / (1000 * 60 * 60)) % 24);
 
         hours = (hours < 10) ? "0" + hours : hours;
         minutes = (minutes < 10) ? "0" + minutes : minutes;
@@ -28,7 +28,10 @@ module.exports = function (grunt) {
     }
 
     // node api
-    var fs = require('fs'), path = require('path'), async = require('async'), os = require('os');
+    var fs = require('fs'),
+        path = require('path'),
+        async = require('async'),
+        os = require('os');
 
     var current = "";
 
@@ -39,7 +42,8 @@ module.exports = function (grunt) {
     });*/
 
     // npm lib
-    var chalk = require('chalk'), _ = require('lodash');
+    var chalk = require('chalk'),
+        _ = require('lodash');
 
     // local lib
 
@@ -134,7 +138,7 @@ module.exports = function (grunt) {
             ignoreEmpty: grunt.option('force') === true,
             display: 'full',
             summary: false,
-            '--load-images' : false
+            '--load-images': false
         });
 
         if (grunt.option('debug')) {
@@ -175,13 +179,18 @@ module.exports = function (grunt) {
 
         var outFileName = options.outfile;
 
-        var totalSpecs = 0, totalTime = 0, emptySpecs = [], failed = [], completed = 0;
+        var totalSpecs = 0,
+            totalTime = 0,
+            emptySpecs = [],
+            failed = [],
+            completed = 0;
 
         var pidQueue = {};
 
         var processes = {};
 
-        var all_report = [], executables = [];
+        var all_report = [],
+            executables = [];
 
         var currentProgress = 0;
 
@@ -189,43 +198,45 @@ module.exports = function (grunt) {
 
         var _table = [];
 
-        var Table = require('cli-table');
-
         var table = [];
 
-        var consoleReport = function(task) {
+        var consoleReport = function (task) {
             // console.log(task);
             console.log('\n' + chalk.underline.bold(task.file) + '( ' + chalk.yellow(task.duration) + 'ms )');
-            var intFailed = 0, _totalSpecs = 0;
+            var intFailed = 0,
+                _totalSpecs = 0;
             var data = task.data;
             var indentLevel = 0;
-            var traverse = function(_obj) {
-                (function(obj){
-                    if(Object.keys(obj.specs).length === 0 && Object.keys(obj.suites).length === 0) {
+            var traverse = function (_obj) {
+                (function (obj) {
+                    if (Object.keys(obj.specs).length === 0 && Object.keys(obj.suites).length === 0) {
                         console.log((new Array(indentLevel + 1).join(' ')) + chalk.red('No specs for this suite!'));
                     } else {
                         var specs = obj.specs;
                         for (var i in specs) {
                             totalSpecs += 1;
                             _totalSpecs += 1;
-                            var item = specs[i], msg = item.description, msgC, pipeC, time = chalk.yellow;
-                            switch(item.status) {
-                                case "passed":
-                                    msgC = chalk.italic.green;
-                                    pipeC = chalk.cyan;
-                                    break;
-                                case "failed":
-                                    intFailed += 1;
-                                    msgC = chalk.italic.red;
-                                    pipeC = chalk.red;
-                                    failedSpecs[failedSpecs.length] = item;
-                                    break;
+                            var item = specs[i],
+                                msg = item.description,
+                                msgC, pipeC, time = chalk.yellow;
+                            switch (item.status) {
+                            case "passed":
+                                msgC = chalk.italic.green;
+                                pipeC = chalk.cyan;
+                                break;
+                            case "failed":
+                                intFailed += 1;
+                                msgC = chalk.italic.red;
+                                pipeC = chalk.red;
+                                failedSpecs[failedSpecs.length] = item;
+                                break;
                             }
                             console.log((new Array(indentLevel + 1).join(' ')) + pipeC('| ') + time('( ' + item.duration + 'ms' + ' ) ') + msgC(item.description));
                         }
                         var suites = obj.suites;
                         for (var i in suites) {
-                            var item = suites[i], time = chalk.yellow;
+                            var item = suites[i],
+                                time = chalk.yellow;
                             var msg = (new Array(indentLevel + 1).join(' ')) + chalk.gray.underline(i) + ' ( ' + time(item.duration + 'ms') + ' ) ';
                             console.log(msg);
                             indentLevel += 2;
@@ -245,6 +256,7 @@ module.exports = function (grunt) {
                 'Total Specs': _totalSpecs
             });
         };
+
         function enque(callback) {
 
             function phantomRunner(options, cb, phantomjs) {
@@ -266,9 +278,11 @@ module.exports = function (grunt) {
 
             }
 
-            var task = this.task, thisReport = [];
+            var task = this.task,
+                thisReport = [];
 
-            var phantomjs = $phantomjs.init(grunt), pid, memory;
+            var phantomjs = $phantomjs.init(grunt),
+                pid, memory;
 
             var jasmine = $jasmine.init(grunt, phantomjs);
 
@@ -289,7 +303,7 @@ module.exports = function (grunt) {
                 completed += 1;
                 specsLeft.splice(idx, 1);
                 var cP = Math.floor(((specNames.length - specsLeft.length) / specNames.length) * 100);
-                for(var i = 0; i < cP - currentProgress; i++) {
+                for (var i = 0; i < cP - currentProgress; i++) {
                     // bar.tick();
                 }
                 currentProgress = cP;
@@ -316,12 +330,12 @@ module.exports = function (grunt) {
                 }
             });
 
-            phantomjs.on('logIt:start', function(data) {
+            phantomjs.on('logIt:start', function (data) {
                 var pid = pidQueue[data.file];
                 // console.log(data);
             });
 
-            phantomjs.on('logIt:end', function(data) {
+            phantomjs.on('logIt:end', function (data) {
                 // console.log(data);
             });
 
@@ -362,8 +376,10 @@ module.exports = function (grunt) {
 
         }
 
-        for(var i = 0; i < groups.length; i++) {
-            executables.push(enque.bind({task : groups[i]}));
+        for (var i = 0; i < groups.length; i++) {
+            executables.push(enque.bind({
+                task: groups[i]
+            }));
         }
 
         grunt.verbose.writeln('Jasmine Runner Starting...');
@@ -372,11 +388,11 @@ module.exports = function (grunt) {
 
         var exec = require('child_process').exec;
 
-        async.parallel(executables, function(err, results) {
-            exec('killall -9 phantomjs', function (error, stdout, stderr) { });
+        async.parallel(executables, function (err, results) {
+            exec('killall -9 phantomjs', function (error, stdout, stderr) {});
             var count = 0;
 
-            for(var i = 0; i < results.length; i++) {
+            for (var i = 0; i < results.length; i++) {
                 count += results[i].length;
             }
 
@@ -384,15 +400,15 @@ module.exports = function (grunt) {
 
             console.table(table);
 
-            if(failedSpecs.length > 0) {
-                for(var i = 0; i < failedSpecs.length; i++) {
+            if (failedSpecs.length > 0) {
+                for (var i = 0; i < failedSpecs.length; i++) {
                     var spec = failedSpecs[i];
                     console.log(chalk.red.underline.bold(spec.fullName));
-                    for(var j = 0; j < spec.failedExpectations.length; j++) {
-                        console.log( new Array(3).join(' ') + (j + 1) + '. ' + chalk.yellow(spec.failedExpectations[j].message) + '\n');
+                    for (var j = 0; j < spec.failedExpectations.length; j++) {
+                        console.log(new Array(3).join(' ') + (j + 1) + '. ' + chalk.yellow(spec.failedExpectations[j].message) + '\n');
                     }
                 }
-                grunt.fail.fatal( failedSpecs.length + ' Spec' + (failedSpecs.length > 1 ? 's' : '') + ' failed');
+                grunt.fail.fatal(failedSpecs.length + ' Spec' + (failedSpecs.length > 1 ? 's' : '') + ' failed');
             } else {
                 console.log('')
             }
