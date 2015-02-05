@@ -1,7 +1,7 @@
 {
     "name": "grunt-contrib-jasmine-phantom",
     "description": "Run jasmine specs headlessly through PhantomJS with more memory optimization.",
-    "version": "0.8.5",
+    "version": "0.8.6",
     "homepage": "https://github.com/undefinedN/grunt-contrib-jasmine-phantom",
     "author": {
         "name": "Grunt Team",
