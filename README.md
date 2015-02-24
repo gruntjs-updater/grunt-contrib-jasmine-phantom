@@ -32,11 +32,17 @@ _Run this task with the `grunt jasmine` command._
 
 If you want to run specific Suite or any spec. _Run this task with the `grunt jasmine:unit:run="suite1|suite2|......etc"`
 
+`unit` -> It contains options for jasmine task to run specs.
+
 Automatically builds and maintains your spec runner and runs your tests headlessly through PhantomJS.
 
 #### Run specs locally or on a remote server
 
 Run your tests on your local filesystem or via a server task like [grunt-contrib-connect][].
+
+#### Run with code coverage
+
+Specify coverage field in options passed as mentioned in options section and the run `jasmine:unit --coverage`
 
 #### Customize your SpecRunner with templates
 
@@ -57,6 +63,22 @@ Supports AMD tests via the [grunt-template-jasmine-requirejs](https://github.com
 
 
 ### Options
+
+#### coverage
+Type: `Object`
+
+Configuration to run code coverage. By the default this plugin uses Blanket js.
+
+Example: 
+  
+    coverage: {
+        yes: 'app/', // To be covered
+        no: "[spec, app/vendor]", // To be skipped
+        onCoverage: function(cb) { // Callback to run after all specs executed.
+            // Do your stuff with this.lcovPath, this.leastCovered and this.percentage
+            cb();
+        }
+    }
 
 #### src
 Type: `String|Array`
