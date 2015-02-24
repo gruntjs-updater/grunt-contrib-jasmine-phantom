@@ -80,7 +80,6 @@ function popLast(l) {
 
     PhantomReporter.prototype.jasmineStarted = function () {
         this.started = true;
-        //phantom.sendMessage('jasmine.jasmineStarted');
     };
 
     PhantomReporter.prototype.specStarted = function (specMetadata) {
@@ -120,7 +119,13 @@ function popLast(l) {
 
     };
 
-    PhantomReporter.prototype.jasmineDone = function () {
+    window.$jasmineDone = function(){
+
+        if(window.blanket) {
+            phantom.sendMessage('lcov', { data: window._$blanket_LCOV, file: current });
+        }
+
+        console.log('Jasmine done');
 
         this.finished = true;
 
@@ -142,16 +147,16 @@ function popLast(l) {
                 path += '&_spec=' + _specs.join('|');
             }
             // document.location.replace('http://localhost/');
-            window.setTimeout(function() {
-                document.location.replace(path);
-            }, 0);
+            document.location.replace(path);
 
         } else {
-            //console.log('last : ' + current);
             phantom.sendMessage('jasmine.jasmineDone');
-            // phantom.sendMessage('jasmine.done.PhantomReporter');
         }
-    };
+    }
+
+    if(!window.blanket) {
+        PhantomReporter.prototype.jasmineDone = window.$jasmineDone;
+    }
 
     PhantomReporter.prototype.suiteDone = function (suiteMetadata) {
         if (suiteMetadata.fullName.indexOf(current) === 0) {
@@ -234,6 +239,7 @@ function popLast(l) {
             }
             return value;
         });
+
         return string;
     }
 

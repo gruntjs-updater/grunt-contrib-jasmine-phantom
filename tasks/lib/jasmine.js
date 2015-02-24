@@ -78,6 +78,17 @@ exports.init = function(grunt, phantomjs) {
 
     exports.copyTempFile(__dirname + '/../jasmine/reporters/PhantomReporter.js', 'reporter.js');
 
+    if(options.cover && options.coverage) {
+
+      exports.copyTempFile(__dirname + '/../../vendor/blanket.js', 'blanket.js');
+
+      exports.copyTempFile(__dirname + '/../../vendor/jasmine-2.x-blanket.js', 'jasmine-2.x-blanket.js');
+
+      exports.copyTempFile(__dirname + '/../../vendor/lcov_reporter.js', 'lcov_reporter.js');
+
+      exports.copyTempFile(__dirname + '/../../vendor/lz-string.js', 'lz_string.js');
+    }
+
     [].concat(jasmineRequire.files.cssFiles, jasmineRequire.files.jsFiles).forEach(function(name) {
         var srcPath = path.join(jasmineRequire.files.path, name);
         exports.copyTempFile(srcPath, name);
@@ -133,7 +144,27 @@ exports.init = function(grunt, phantomjs) {
         copyTempFile : exports.copyTempFile,
         phantomjs : phantomjs
       };
+
       source = options.template.process(grunt, task, context);
+
+      if(options.cover && options.coverage) {
+
+          var coverStr = function(lcovString){
+              return '<script data-cover-only="' + options.coverage.yes + '" data-cover-never="' + options.coverage.no + '" src=".grunt/grunt-contrib-jasmine/blanket.js" ' + lcovString + ' ></script><script src=".grunt/grunt-contrib-jasmine/jasmine-2.x-blanket.js"></script><script src=".grunt/grunt-contrib-jasmine/lz_string.js"></script>';
+          };
+
+          // Below is very very dirty. Will remove it with alternative method soon.
+          var customSource = source;
+          var fname = specrunner.replace('.html', '_phantom.html');
+          var repString = '<script src=".grunt/grunt-contrib-jasmine/boot.js"></script>';
+          var lcovString = ' data-cover-reporter=".grunt/grunt-contrib-jasmine/lcov_reporter.js" data-cover-reporter-options=\'{ "toHTML": false}\' ';
+          var str = repString + coverStr(lcovString);
+          customSource = customSource.replace(repString, str);
+          str = repString + coverStr('');
+          source = source.replace(repString, str);
+          grunt.file.write(fname, customSource);
+      }
+
       grunt.file.write(specrunner, source);
     } else {
       grunt.file.copy(options.template, specrunner, {
@@ -175,8 +206,6 @@ exports.init = function(grunt, phantomjs) {
       patternArray = pattern.split(",");
 
       while(patternArray.length > 0) {
-        pattern = (patternArray.splice(0, 1)[0]);
-
         if(pattern.length > 0) {
           if(pattern.indexOf('/') === -1) {
             specPattern = new RegExp("("+pattern+"[^/]*)(?!/)$", "ig");
@@ -189,6 +218,8 @@ exports.init = function(grunt, phantomjs) {
           // push is usually faster than concat.
           [].push.apply(scriptSpecs, files.filter(matchPath));
         }
+
+        pattern = (patternArray.splice(0, 1)[0]);
       }
 
       filteredArray = _.uniq(scriptSpecs);

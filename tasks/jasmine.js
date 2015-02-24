@@ -14,6 +14,8 @@ module.exports = function (grunt) {
         // console.log(arguments);
     });
 
+    var uuid = require('node-uuid');
+
     function msToTime(duration) {
         var milliseconds = parseInt((duration % 1000) / 100),
             seconds = parseInt((duration / 1000) % 60),
@@ -37,9 +39,9 @@ module.exports = function (grunt) {
 
     /*var WebSocket = require('ws') , ws = new WebSocket('ws://localhost:3000');
 
-    ws.on('open', function() {
-        ws.send('Connected');
-    });*/
+     ws.on('open', function() {
+     ws.send('Connected');
+     });*/
 
     // npm lib
     var chalk = require('chalk'),
@@ -70,8 +72,6 @@ module.exports = function (grunt) {
     };
 
     require('console.table');
-
-
 
     function shuffleArray(array) {
         for (var i = array.length - 1; i > 0; i--) {
@@ -105,11 +105,34 @@ module.exports = function (grunt) {
         };
     }
 
+    try {
+        fs.mkdirSync('./lcov');
+    } catch (e) {
+
+    }
+
+    var reportQueue = [];
+    /*async.queue(function(task, cb) {
+     var id = 'locv_' + task.file;
+     fs.writeFileSync('./lcov/' + id + '.info', task.data, 'utf8', function(err){
+     if(err) {
+     console.log('Error storing report for ' + task.file);
+     }
+     cb();
+     });
+     }, 10)*/
+    ;
+
     var $phantomjs = require('grunt-lib-phantomjs');
 
     var $jasmine = require('./lib/jasmine');
 
     grunt.registerMultiTask('jasmine', 'Run jasmine specs headlessly through PhantomJS.', function () {
+        var done = this.async();
+
+        var cover = grunt.option('coverage');
+
+        var LZString = require('../vendor/lz-string.js');
 
         var providedSpecs, optionalHandlers, eventName, handler;
 
@@ -138,8 +161,11 @@ module.exports = function (grunt) {
             ignoreEmpty: grunt.option('force') === true,
             display: 'full',
             summary: false,
+            cover: false,
             '--load-images': false
         });
+
+        options.cover = cover;
 
         if (grunt.option('debug')) {
             grunt.log.debug(options);
@@ -175,9 +201,7 @@ module.exports = function (grunt) {
 
         var specsLeft = specNames.slice(0);
 
-        var done = this.async();
-
-        var outFileName = options.outfile;
+        var outFileName = options.outfile.replace('.html', (options.cover && options.coverage ? '_phantom' : '') + '.html');
 
         var totalSpecs = 0,
             totalTime = 0,
@@ -220,16 +244,20 @@ module.exports = function (grunt) {
                                 msg = item.description,
                                 msgC, pipeC, time = chalk.yellow;
                             switch (item.status) {
-                            case "passed":
-                                msgC = chalk.italic.green;
-                                pipeC = chalk.cyan;
-                                break;
-                            case "failed":
-                                intFailed += 1;
-                                msgC = chalk.italic.red;
-                                pipeC = chalk.red;
-                                failedSpecs[failedSpecs.length] = item;
-                                break;
+                                case "passed":
+                                    msgC = chalk.italic.green;
+                                    pipeC = chalk.cyan;
+                                    break;
+                                case "failed":
+                                    intFailed += 1;
+                                    msgC = chalk.italic.red;
+                                    pipeC = chalk.red;
+                                    failedSpecs[failedSpecs.length] = item;
+                                    break;
+                                default:
+                                    msgC = chalk.bgYellow.black;
+                                    pipeC = chalk.red;
+                                    break;
                             }
                             console.log((new Array(indentLevel + 1).join(' ')) + pipeC('| ') + time('( ' + item.duration + 'ms' + ' ) ') + msgC(item.description));
                         }
@@ -257,6 +285,8 @@ module.exports = function (grunt) {
             });
         };
 
+        var coverageReport = {};
+
         function enque(callback) {
 
             function phantomRunner(options, cb, phantomjs) {
@@ -268,13 +298,13 @@ module.exports = function (grunt) {
                     file = options.host + options.outfile;
                 }
 
-                return phantomjs.spawn(file, {
+                var x = phantomjs.spawn(file, {
                     failCode: 90,
                     options: options,
                     done: function (err) {
                         cb(err, status);
                     }
-                }).pid;
+                });
 
             }
 
@@ -293,12 +323,14 @@ module.exports = function (grunt) {
             options.outfile = outFileName + '?_spec=' + clone.join('|') + '\&spec=' + first;
 
             phantomjs.on('jasmine.jasmineDone', function () {
-                phantomjs.halt();
+                // console.log(chalk.red('Jasmine done from one of the instances'));
                 callback(null, thisReport);
+                phantomjs.halt();
                 // console.log(specsLeft);
             });
 
             phantomjs.on('jasmine.completedFile', function (report) {
+                // console.log(report.file + ' is completed');
                 var idx = specsLeft.indexOf(report.file);
                 completed += 1;
                 specsLeft.splice(idx, 1);
@@ -320,12 +352,11 @@ module.exports = function (grunt) {
 
             phantomjs.on('fail.timeout', function () {
                 grunt.log.writeln();
-                console.log(arguments);
                 grunt.warn('PhantomJS timed out, possibly due to an unfinished async spec.', 90);
             });
 
             phantomjs.on('console', function (msg) {
-                if (options.debug === true) {
+                if (options.debug) {// if (msg.indexOf('XMLHttpRequest') === -1) {
                     grunt.log.writeln('\n' + chalk.yellow('console : ') + chalk.italic(msg));
                 }
             });
@@ -358,6 +389,22 @@ module.exports = function (grunt) {
                 grunt.event.emit.apply(grunt.event, args);
             });
 
+            phantomjs.on('lcov', function (_report) {
+                if (_report.data) {
+                    coverageReport[_report.file] = _report.data;
+                } else {
+                    console.log(chalk.red(_report.file + ' file missed to report.'));
+                }
+                _report = null;
+            });
+
+            optionalHandlers = options.handlers || {};
+
+            for(eventName in optionalHandlers) {
+                handler = optionalHandlers[eventName];
+                phantomjs.on(eventName, typeof handler === "function" ? handler: function(){});
+            }
+
             pid = phantomRunner(options, function (err, status) {
                 var success = !err && status.failed === 0;
                 if (err) {
@@ -389,7 +436,11 @@ module.exports = function (grunt) {
         var exec = require('child_process').exec;
 
         async.parallel(executables, function (err, results) {
-            exec('killall -9 phantomjs', function (error, stdout, stderr) {});
+
+            // exec('killall -9 phantomjs', function (error, stdout, stderr) {});
+
+            console.log('Reports :' + Object.keys(coverageReport).length);
+
             var count = 0;
 
             for (var i = 0; i < results.length; i++) {
@@ -410,10 +461,131 @@ module.exports = function (grunt) {
                 }
                 grunt.fail.fatal(failedSpecs.length + ' Spec' + (failedSpecs.length > 1 ? 's' : '') + ' failed');
             } else {
-                console.log('')
+                console.log('');
             }
 
-            done();
+            if(options.cover && options.coverage) {
+
+                async.parallel([function (cb) {
+                    if (Object.keys(coverageReport).length > 0) {
+                        var fse = require('fs-extra'), tName = './.grunt/grunt-contrib-jasmine/temp';
+                        fse.removeSync(tName);
+                        console.log(chalk.green.italic('Generating Coverage report...'));
+                        fse.ensureDirSync(tName);
+                        fse.ensureDirSync('./coverage');
+                        for (var i in coverageReport) {
+                            fse.outputFileSync(tName + '/coverage_' + i + '.log', coverageReport[i]);
+                            delete coverageReport[i];
+                        }
+                        var mergerPath = './node_modules/grunt-contrib-jasmine-phantom/node_modules/.bin/lcov-result-merger';
+
+                        require('child_process').exec(mergerPath + " '" + tName + "/*.log' './coverage/lcov.log'", function (err) {
+                            if (err) {
+                                console.log(err);
+                                console.log(chalk.red('Unable to generate Coverage report. Error while merging it'));
+                            } else {
+                                console.log(chalk.green.italic('Generated Coverage report!'));
+                            }
+                            fse.removeSync(tName);
+                            cb(null, './coverage/lcov.log');
+                        });
+                    } else {
+                        cb(null);
+                    }
+                }], function (errors, results) {
+                    var lcovPath = results[0];
+
+                    fs.readFile(lcovPath, "utf8", function (err, data) {
+
+                        if (err) {
+                            console.log('Something bad happened while reading lcov string');
+                            throw err;
+                        }
+
+                        data = data.split('end_of_record');
+
+                        var readBlock = function (cb) {
+                            var results, name, gotHits, block, total;
+                            block = this.block;
+                            results = block.split('\n');
+                            name = results.splice(0, 1).pop();
+                            gotHits = total = 0;
+                            results.forEach(function (line) {
+                                try {
+                                    line = line.split(':')[1].split(',');
+                                    total += 1;
+                                    if (+line[1] !== 0) {
+                                        gotHits += 1;
+                                    }
+                                } catch (e) {
+
+                                }
+                            });
+                            var percentage = (gotHits / total) * 100;
+                            cb(null, {name: name, percentage: percentage});
+                        };
+
+                        var execute = [];
+
+                        data.forEach(function (block) {
+                            block = block.trim();
+                            if (block.length > 0) {
+                                execute[execute.length] = readBlock.bind({block: block});
+                            }
+                        });
+
+                        async.parallel(execute, function (err, results) {
+
+                            var grandTotal = 0;
+
+                            results = results.sort(function (a, b) {
+                                return a.percentage - b.percentage;
+                            });
+
+                            results.forEach(function (a) {
+                                grandTotal += parseFloat(a.percentage);
+                            });
+
+                            var percentage = (grandTotal / results.length).toFixed(2);
+
+                            var eventPayLoad = {
+                                percentage: percentage,
+                                leastCovered: results.slice(0, 5),
+                                lcovPath: lcovPath
+                            }
+
+                            console.log('\n' + chalk.green.bold('****************** Coverage Report ******************') + '\n');
+
+                            console.log(chalk.green.bold.underline('Code coverage: ' + percentage) + '% \n');
+
+                            var count = 0;
+
+                            results = results.map(function (v) {
+                                v.percentage = v.percentage.toFixed(2);
+                                return v;
+                            });
+
+                            console.table(results);
+
+
+                            if (options.coverage && typeof options.coverage.onCoverage === "function") {
+                                options.coverage.onCoverage.call(eventPayLoad, function () {
+                                    done();
+                                });
+                            } else {
+                                done();
+                            }
+
+                        });
+                    });
+
+
+                });
+
+            } else {
+                done();
+            }
+
         });
 
     });
