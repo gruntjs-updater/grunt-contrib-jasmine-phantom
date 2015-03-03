@@ -52,7 +52,7 @@
 
         jasmineDone: function() {
             blanket.onTestsDone();
-            window.setTimeout($jasmineDone, 1000);
+            $jasmineDone();
         },
 
         log: function(str) {

@@ -325,7 +325,7 @@ module.exports = function (grunt) {
             phantomjs.on('jasmine.jasmineDone', function () {
                 // console.log(chalk.red('Jasmine done from one of the instances'));
                 callback(null, thisReport);
-                phantomjs.halt();
+                setTimeout(phantomjs.halt, 5000);
                 // console.log(specsLeft);
             });
 
@@ -464,11 +464,13 @@ module.exports = function (grunt) {
                 console.log('');
             }
 
+            var fse = require('fs-extra');
+
             if(options.cover && options.coverage) {
 
                 async.parallel([function (cb) {
                     if (Object.keys(coverageReport).length > 0) {
-                        var fse = require('fs-extra'), tName = './.grunt/grunt-contrib-jasmine/temp';
+                        var tName = './.grunt/grunt-contrib-jasmine/temp';
                         fse.removeSync(tName);
                         console.log(chalk.green.italic('Generating Coverage report...'));
                         fse.ensureDirSync(tName);
@@ -548,6 +550,10 @@ module.exports = function (grunt) {
 
                             var percentage = (grandTotal / results.length).toFixed(2);
 
+                            fse.outputFileSync('./coverage.json', JSON.stringify({
+                                percentage: percentage
+                            }));
+
                             var eventPayLoad = {
                                 percentage: percentage,
                                 leastCovered: results.slice(0, 5),
@@ -566,7 +572,6 @@ module.exports = function (grunt) {
                             });
 
                             console.table(results);
-
 
                             if (options.coverage && typeof options.coverage.onCoverage === "function") {
                                 options.coverage.onCoverage.call(eventPayLoad, function () {

@@ -119,13 +119,13 @@ function popLast(l) {
 
     };
 
-    window.$jasmineDone = function(){
+    window.$jasmineDone = function() {
 
         if(window.blanket) {
             phantom.sendMessage('lcov', { data: window._$blanket_LCOV, file: current });
         }
 
-        console.log('Jasmine done');
+        console.log('Jasmine done ' + current);
 
         this.finished = true;
 
@@ -150,6 +150,7 @@ function popLast(l) {
             document.location.replace(path);
 
         } else {
+            window.$jasmineDoneCalled = true;
             phantom.sendMessage('jasmine.jasmineDone');
         }
     }
