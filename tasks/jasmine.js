@@ -284,6 +284,8 @@ module.exports = function (grunt) {
                 'Total Specs': _totalSpecs
             });
         };
+        
+        var guid = 'xxxxxxxx_xxxx_4xxx_yxxx_xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});
 
         var coverageReport = {};
 
@@ -297,8 +299,10 @@ module.exports = function (grunt) {
                     if (!(/\/$/).test(options.host)) options.host = options.host + '/';
                     file = options.host + options.outfile;
                 }
+                
+                file += (file.indexOf('?') > -1 ? "&" : '?') + ("pid=" + guid);
 
-                var x = phantomjs.spawn(file, {
+                phantomjs.spawn(file, {
                     failCode: 90,
                     options: options,
                     done: function (err) {
