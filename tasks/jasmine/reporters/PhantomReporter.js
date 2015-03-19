@@ -146,6 +146,8 @@ function popLast(l) {
             if (_specs.length > 0) {
                 path += '&_spec=' + _specs.join('|');
             }
+            var pid = getParameterByName('pid');
+            path = path + (path.indexOf('?') > -1 ? '&' : '?') + 'pid=' + window.___pid___;
             // document.location.replace('http://localhost/');
             document.location.replace(path);
 
