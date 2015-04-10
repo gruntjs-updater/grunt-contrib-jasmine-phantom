@@ -167,6 +167,15 @@ module.exports = function (grunt) {
 
         options.cover = cover;
 
+        var guid;
+        var t = options.uniqueId || "-";
+
+        if(!t.split('-')[0]) {
+            guid = 'xxxxxxxx_xxxx_4xxx_yxxx_xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});
+        } else {
+            guid = options.uniqueId;
+        }
+        
         if (grunt.option('debug')) {
             grunt.log.debug(options);
         }
@@ -285,8 +294,6 @@ module.exports = function (grunt) {
             });
         };
         
-        var guid = 'xxxxxxxx_xxxx_4xxx_yxxx_xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {var r = Math.random()*16|0,v=c=='x'?r:r&0x3|0x8;return v.toString(16);});
-
         var coverageReport = {};
 
         function enque(callback) {
